@@ -53,10 +53,10 @@ hook.Add("DependenciesReady", "DEPENDENCIES_READY", function()
 	local _, modules = file.Find("modules/*", "LUA") 
 	for _, dir in pairs(modules, false) do
 		if dir == "." or dir == ".." then continue end
-		local n = "modules/"..dir
-		import(n)
-	end  
+		import("modules/"..dir)
+	end
 end)
+
 
 include("import_manager.lua") 
 
