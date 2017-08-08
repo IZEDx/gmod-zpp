@@ -71,6 +71,8 @@ local getComponentType = function(dep)
 		return "module"
 	elseif dep:sub(0, 5) == "libs/" then
 		return "library"
+	elseif dep:sub(0, 5) == "tests/" then
+		return "test"
 	elseif dep:sub(0, 7) == "config/" then
 		return "config"
 	else
