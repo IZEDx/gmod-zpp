@@ -1,0 +1,2 @@
+LIBRARY.Name = "ZED GUI"
+LIBRARY.Author = "IZED"

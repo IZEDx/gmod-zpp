@@ -1,0 +1,12 @@
+"AddonInfo"
+{
+	"name"				"Z++"
+	"version"			"1"
+	"up_date"			"08/03/17"
+	"author_name"			"IZED"
+	"author_email"			"nk@i-zed.net"
+	"author_url"			"ized.io"
+	"info"				""
+	"override"			"1"
+}
+ 
