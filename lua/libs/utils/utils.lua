@@ -69,9 +69,104 @@ local function _printTable(tbl, spaces, func)
 		end
 	end
 end
-function LIBRARY.PrintTable(tbl, func)
+function LIBRARY.printTable(tbl, func)
 	if not func then func = print end
 	func("{")
 	_printTable(tbl, "  ", func)
 	func("}")
 end
+
+local IS = {}
+function LIBRARY.Is(v)
+	local this = {
+		value = v
+	}
+
+	setmetatable(this, IS)
+
+	return this
+end
+
+local function _ofType(t, v)
+	return type(v) == t
+end
+
+local _types = {
+	str		= curry(_ofType, "string"),
+	num		= curry(_ofType, "number"),
+	bool	= curry(_ofType, "boolean"),
+	fn		= curry(_ofType, "function"),
+	tbl		= curry(_ofType, "table"),
+	ud		= curry(_ofType, "userdata"),
+
+	valid	= function(v)
+		return type(v) ~= nil
+	end,
+
+	int 	= function(v)
+		if not _types.num(v) then return false end
+		local _,f = math.modf(v)
+		return f == 0
+	end,
+
+	float	= function(v)
+		if not _types.num(v) then return false end
+		local _,f = math.modf(v)
+		return f ~= 0
+	end,
+
+	size = function(v, size)
+		if not _types.num(size) then return false end
+		if _types.str(v) or _types.tbl(v) then
+			return #v == size
+		end
+		return false
+	end,
+
+	range	= function(v, min, max)
+		if not _types.num(min) then return false end
+		if not _types.num(max) then
+			max = min
+			min = 0
+		end
+
+		if _types.num(v) then
+			return v >= min and v <= max
+		end
+
+		if _types.str(v) or _types.tbl(v) then
+			return #v >= min and #v <= max
+		end
+
+		return false
+	end
+
+	with	= function(v, ...)
+		local options = {...}
+		if #options == 1 and _types.tbl(options[1]) then
+			options = options[1]
+		end
+		if not _types.tbl(v) then
+			return false
+		end
+		for k,v in pairs(options) do
+			local key = k
+			if _types.str(v) and not _types.str(k) then
+				key = v
+			end
+			if _types.str(key) then
+				if options[key] then
+					return false
+				end
+			end
+		end
+		return true
+	end
+}
+
+for k,v in pairs(_types) do
+	IS[k] = function(self, ...)
+		return v(self.value, ...)
+	end
+end
+
