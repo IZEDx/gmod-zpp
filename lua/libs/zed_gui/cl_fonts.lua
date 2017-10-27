@@ -1,32 +1,55 @@
+local utils = import("libs/utils")
+local is = utils.Is
 
-surface.CreateFont ("ZEDFont25", {
-  size = 25 / 1680 * ScrW(),
-  weight = 400,
-  antialias = true,
-  shadow = false,
-  font = "Montserrat"
-})
+local fonts = keeper:get("fonts", {})
 
-surface.CreateFont ("ZEDFont30", {
-  size = 30 / 1680 * ScrW(),
-  weight = 400,
-  antialias = true,
-  shadow = false,
-  font = "Montserrat"
-})
+export Font = function(size)
+  if not is(size):int() then 
+    return fonts[1] 
+  end
 
-surface.CreateFont ("ZEDFont40", {
-  size = 40 / 1680 * ScrW(),
-  weight = 400,
-  antialias = true,
-  shadow = false,
-  font = "Montserrat"
-})
+  local fontname = "ZEDFont"..size
+  if fonts[fontname] == fontname then 
+    return fontname 
+  end
 
-surface.CreateFont ("ZEDFont60", {
-  size = 60 / 1680 * ScrW(),
-  weight = 400,
-  antialias = true,
-  shadow = false,
-  font = "Montserrat"
-})
+  surface.CreateFont (fontname, {
+    size = size / 1680 * ScrW(),
+    weight = 400,
+    antialias = true,
+    shadow = false,
+    font = "Montserrat"
+  })
+
+  fonts[fontname] = fontname
+
+  return fontname
+end
+
+export WorldFont = function(size)
+  if not is(size):int() then 
+    return fonts[1] 
+  end
+
+  local fontname = "ZEDFont"..size.."World"
+  if fonts[fontname] == fontname then 
+    return fontname 
+  end
+
+  surface.CreateFont (fontname, {
+    size = size,
+    weight = 400,
+    antialias = true,
+    shadow = false,
+    font = "Montserrat"
+  })
+
+  fonts[fontname] = fontname
+
+  return fontname
+end
+
+for i = 25, 60, 5 do
+  exports.Font(i)
+  exports.WorldFont(i)
+end
