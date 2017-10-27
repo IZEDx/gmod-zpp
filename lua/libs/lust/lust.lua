@@ -9,9 +9,9 @@ lust.errors = 0
 lust.befores = {}
 lust.afters = {}
 
-local red = string.char(27) .. '[31m'
-local green = string.char(27) .. '[32m'
-local normal = string.char(27) .. '[0m'
+local red = ''--string.char(27) .. '[31m'
+local green = ''--string.char(27) .. '[32m'
+local normal = ''--string.char(27) .. '[0m'
 local function indent(level) return string.rep('\t', level or lust.level) end
 
 function lust.describe(name, fn)
