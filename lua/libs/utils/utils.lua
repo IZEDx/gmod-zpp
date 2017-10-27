@@ -58,6 +58,7 @@ function LIBRARY.SanitizeTable(tbl)
 end
 
 
+
 local function _printTable(tbl, spaces, func)
 	for k,v in pairs(tbl) do
 		if type(v) ~= "table" then
@@ -69,7 +70,7 @@ local function _printTable(tbl, spaces, func)
 		end
 	end
 end
-function LIBRARY.printTable(tbl, func)
+function LIBRARY.PrintTable(tbl, func)
 	if not func then func = print end
 	func("{")
 	_printTable(tbl, "  ", func)
@@ -77,30 +78,32 @@ function LIBRARY.printTable(tbl, func)
 end
 
 local IS = {}
+local IS_mt = {__index = IS}
 function LIBRARY.Is(v)
 	local this = {
 		value = v
 	}
 
-	setmetatable(this, IS)
+	setmetatable(this, IS_mt)
 
 	return this
 end
 
+
 local function _ofType(t, v)
 	return type(v) == t
 end
-
-local _types = {
-	str		= curry(_ofType, "string"),
-	num		= curry(_ofType, "number"),
-	bool	= curry(_ofType, "boolean"),
-	fn		= curry(_ofType, "function"),
-	tbl		= curry(_ofType, "table"),
-	ud		= curry(_ofType, "userdata"),
+local _types = {}
+_types = {
+	str		= Z.compose(_ofType, "string"),
+	num		= Z.compose(_ofType, "number"),
+	bool	= Z.compose(_ofType, "boolean"),
+	fn		= Z.compose(_ofType, "function"),
+	tbl		= Z.compose(_ofType, "table"),
+	ud		= Z.compose(_ofType, "userdata"),
 
 	valid	= function(v)
-		return type(v) ~= nil
+		return IsValid(v)
 	end,
 
 	int 	= function(v)
@@ -139,7 +142,7 @@ local _types = {
 		end
 
 		return false
-	end
+	end,
 
 	with	= function(v, ...)
 		local options = {...}
