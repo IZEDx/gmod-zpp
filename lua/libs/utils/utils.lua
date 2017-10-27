@@ -170,3 +170,7 @@ for k,v in pairs(_types) do
 	end
 end
 
+if Z.Debug then
+	Z.async(import, "tests/utils")
+end
+
