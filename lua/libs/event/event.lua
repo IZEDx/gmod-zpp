@@ -4,7 +4,7 @@ lib.Author = "IZED"
 
 local rx = import("libs/rx")
 
-local counts = keeper:Get("counts", {})
+local counts = keeper:get("counts", {})
 
 for k,v in pairs(counts) do
 	hook.Remove(k, "Event:"..k..":"..v)

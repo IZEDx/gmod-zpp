@@ -6,7 +6,7 @@ local rx 			= import("libs/rx")
 local utils 		= import("libs/utils")
 local is 			= utils.is
 local cfg 			= import("config/mysql")
-local connections 	= keeper:Get("connections", {})
+local connections 	= keeper:get("connections", {})
 
 local function _queryError(results)
 	if results[1] and not results[1].status then

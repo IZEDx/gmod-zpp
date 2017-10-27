@@ -2,11 +2,12 @@ LIBRARY.Name = "Variables"
 LIBRARY.Author = "IZED"
 
 local utils 	= import("libs/utils")
+local is 		= utils.Is
 local rpc 		= import("libs/rpc")
 local event 	= import("libs/event")
 local sql 		= import("libs/sql")
 
-local variables = keeper:Get("variables", {})
+local variables = keeper:get("variables", {})
 local counter = 0
 
 local data = sql.Default("zpp_data")
@@ -14,7 +15,7 @@ local pdata = sql.Default("zpp_pdata")
 
 local VARIABLE = {}
 function LIBRARY.Create(name, value, options)
-	if not is(name).str() then
+	if not is(name):str() then
 		return nil
 	end
 

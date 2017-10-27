@@ -1,8 +1,9 @@
 
+local keeper = keeper.Create("import_manager")
 local list = {}
-local cl_files = {}
-local CompileString = _G.CompileString
-local _import
+local cl_files = keeper:get("cl_files", {})
+local cl_filecallbacks = {}
+local CompileString = keeper:get("CompileString", _G.CompileString)
 
 local dependencyNotFound = function(caller, dependency)
 	return Z.err("DEPENDENCY", "Can't find dependency:", dependency, "(Required by " .. caller .. ")")
