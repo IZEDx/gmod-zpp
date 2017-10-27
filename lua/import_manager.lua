@@ -19,20 +19,21 @@ local createFileRunner = function(path, prestr)
 		if not file.Exists(path, "LUA") then return "File not found:" .. tostring(path), "DEPENDENCY" end
 		code = file.Read(path, "LUA")
 	else
-		code = cl_files[path]
+		code = cl_files[path] or ""
 	end
 	return CompileString(prestr(tostring(code)), path, false)
 end
 
 
-local runInComponentContext = function(file, compHandler) 
+local RunInComponentContext = function(file, compHandler) 
 	local oldComp = _G.COMPONENT
 	local oldCompHandler = _G[compHandler]
 	local comp = {}
+	local Require = Z.import
 	_G.COMPONENT = comp
-	_G.import = function(dep)
-		local imp = _import(dep, file)
-		if imp == "Error" then 
+	comp.import = function(dep)
+		local imp = Require(dep, file)
+		if imp == "Error" then  
 			comp.DependencyNotFound = true
 			if type(comp.OnDependencyNotFound) == "function" then
 				comp.OnDependencyNotFound(dep)
@@ -41,16 +42,16 @@ local runInComponentContext = function(file, compHandler)
 		return imp
 	end 
 
-	local runner, errtype = createFileRunner(file, function(code)
-		code = string.gsub(code, "(%s*)export%s+(%w+)", "%1COMPONENT.%2")
+	local Component, errtype = createFileRunner(file, function(code)
+		code = string.gsub(code, "(%s*)export%s+(%w+)", "%1exports.%2")
 		code = string.gsub(code, [[import\\(([\\"\\'].+[\\"\\'])\\)]], [[import(%1) if DNF then return "Error" end]])
-		code = [[local COMPONENT = _G.COMPONENT local ]]..compHandler..[[ = COMPONENT local keeper = keeper.Create("]]..file..[[") local import = _G.import local DNF = COMPONENT.DependencyNotFound ]] .. code
+		code = [[local exports = _G.COMPONENT local ]]..compHandler..[[ = exports local keeper = keeper.Create("]]..file..[[") local import = COMPONENT.import local DNF = COMPONENT.DependencyNotFound ]] .. code
 		return code
 	end)
-	if type(runner) ~= "function" then
-		Z.err(errtype or "LUA", runner)
+	if type(Component) ~= "function" then
+		Z.err(errtype or "LUA", Component)
 	else
-		local newComp = runner()
+		local newComp = Component()
 		if newComp ~= nil then
 			if type(newComp) == "table" then
 				for k,v in pairs(newComp) do
@@ -63,7 +64,6 @@ local runInComponentContext = function(file, compHandler)
 	end 
 
 	_G.COMPONENT = oldComp
-	_G.import = _import
 	return comp
 end
 
@@ -142,10 +142,22 @@ end
 
 --------------------------------------------------------------------------------
 
+local function LoadComponent(path, type, orig)
+	for k,v in pairs(RunInComponentContext(path, type)) do 
+		orig[k] = v
+	end
+end
 
-function import(dep, caller)
-	if list[dep] then
+
+function import(dep, caller, force)
+	if list[dep] and not force then
 		return list[dep]
+	elseif not list[dep] then
+		list[dep] = {}
+	else
+		for k,v in pairs(list[dep]) do
+			list[dep][k] = nil
+		end
 	end
 	if type(caller) ~= "string" then caller = dep end
 
@@ -157,20 +169,16 @@ function import(dep, caller)
 		DEPENDENCY_NOT_FOUND = true
 		return dependencyNotFound(caller, dep) 
 	end
-	list[dep] = {
-		Dependency = dep
-	}
+	list[dep].Dependency = dep
 
-	Z.dbg("DEPENDENCY", "Loading " .. compType .. ": ", dep, "(Required by " .. caller .. ")")
+	Z.dbg("DEPENDENCY", "Loading " .. compType .. ": ", dep, "(from " .. caller .. ")")
 
-	for k,v in pairs(files) do
-		if (v.client and CLIENT) or (v.server and SERVER) then
-			local comp = runInComponentContext(v.path, compType:upper())
-			for k,v in pairs(comp) do 
-				if not list[dep][k] then
-					list[dep][k] = v
-				end
-			end
+	for k,v in ipairs(files) do
+		if not cl_files[v.path] and CLIENT then
+			cl_filecallbacks[v.path] = Z.compose(LoadComponent, v.path, compType:upper(), list[dep])
+			Z.dbg("DEPENDENCY", v.path, "was not downloaded yet. It will be run asynchronously.")
+		elseif (v.client and CLIENT) or (v.server and SERVER) then
+			LoadComponent(v.path, compType:upper(), list[dep])
 		end
 		if v.client and SERVER then
 			AddCSLuaFile(v.path)
@@ -180,7 +188,7 @@ function import(dep, caller)
 			end
 		end
 	end
-	
+
 	if list[dep]._return then
 		return list[dep]._return
 	end
@@ -188,7 +196,7 @@ function import(dep, caller)
 end
 
 
-_import = import
+Z.import = import
 
 if SERVER then
 	util.AddNetworkString( "LOAD_DEPENDENCY" )
@@ -223,11 +231,15 @@ else
 		local max = net.ReadInt(32)
 		local file = net.ReadString()
 		local code = net.ReadString()
+
 		cl_files[file] = code
 
-		--Z.dbg("FILE", "Received file:", file, id)
+		Z.dbg("FILE", "Received file:", file, id, max)
 
 		if id >= max then
+			for _,asyncImport in pairs(cl_filecallbacks) do
+				asyncImport()
+			end
 			hook.Run("DependenciesReady")
 		end
 	end)
